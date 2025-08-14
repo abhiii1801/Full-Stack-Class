@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Live Character Counter</title>
+<style>
+  .wrap { max-width: 520px; margin: 2rem auto; font-family: system-ui, sans-serif; }
+  textarea {
+    width: 100%; min-height: 120px; padding: 12px;
+    border: 1px solid #ccc; border-radius: 10px; font-size: 15px; resize: vertical;
+  }
+  .meta {
+    display: flex; justify-content: space-between; margin-top: 8px; font-size: 14px; color: #555;
+  }
+  .count { font-variant-numeric: tabular-nums; }
+  .warn { color: #c0392b; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <label for="msg">Message</label>
+  <textarea id="msg" maxlength="140" placeholder="Type your masterpiece..." aria-describedby="counter"></textarea>
+  <div class="meta">
+    <span id="counter" class="count" aria-live="polite">0 / 140</span>
+    <span id="remain">140 left</span>
+  </div>
+</div>
+
+<script>
+  const ta = document.getElementById('msg');
+  const counter = document.getElementById('counter');
+  const remain = document.getElementById('remain');
+  const max = ta.maxLength; // 140
+
+  function update() {
+    const len = ta.value.length;
+    counter.textContent = `${len} / ${max}`;
+    const left = max - len;
+    remain.textContent = `${left} left`;
+    // add warning style when >= 90% used
+    const nearLimit = len >= Math.floor(max * 0.9);
+    counter.classList.toggle('warn', nearLimit);
+    remain.classList.toggle('warn', nearLimit);
+  }
+
+  ta.addEventListener('input', update);
+  update(); // init
+</script>
+</body>
+</html>

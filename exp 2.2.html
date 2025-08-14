@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Filter</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        padding: 20px;
+    }
+
+    .filter {
+        margin-bottom: 20px;
+    }
+
+    select {
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+    }
+
+    .products {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .product {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: transform 0.2s;
+    }
+
+    .product:hover {
+        transform: translateY(-5px);
+    }
+
+    .price {
+        color: #27ae60;
+        font-weight: bold;
+    }
+</style>
+</head>
+<body>
+
+<h2>Product List</h2>
+
+<div class="filter">
+    <label for="sort">Sort by: </label>
+    <select id="sort">
+        <option value="">Select</option>
+        <option value="low-high">Price: Low to High</option>
+        <option value="high-low">Price: High to Low</option>
+    </select>
+</div>
+
+<div class="products" id="product-list">
+    <div class="product" data-price="1200">
+        <h4>Headphones</h4>
+        <p class="price">₹1200</p>
+    </div>
+    <div class="product" data-price="450">
+        <h4>Mouse</h4>
+        <p class="price">₹450</p>
+    </div>
+    <div class="product" data-price="2000">
+        <h4>Keyboard</h4>
+        <p class="price">₹2000</p>
+    </div>
+    <div class="product" data-price="750">
+        <h4>USB Drive</h4>
+        <p class="price">₹750</p>
+    </div>
+</div>
+
+<script>
+    const sortSelect = document.getElementById("sort");
+    const productList = document.getElementById("product-list");
+
+    sortSelect.addEventListener("change", () => {
+        let products = Array.from(productList.children);
+        let sortValue = sortSelect.value;
+
+        products.sort((a, b) => {
+            let priceA = parseInt(a.dataset.price);
+            let priceB = parseInt(b.dataset.price);
+
+            if (sortValue === "low-high") return priceA - priceB;
+            if (sortValue === "high-low") return priceB - priceA;
+            return 0;
+        });
+
+        productList.innerHTML = "";
+        products.forEach(product => productList.appendChild(product));
+    });
+</script>
+
+</body>
+</html>

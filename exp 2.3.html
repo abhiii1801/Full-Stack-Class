@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SVG Drawing Tool</title>
+<style>
+  :root { --bg:#0f172a; --ui:#111827; --text:#e5e7eb; }
+  body { margin:0; font-family:system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  .toolbar{
+    position:fixed; inset:12px auto auto 12px; display:flex; gap:8px; align-items:center;
+    background:var(--ui); padding:10px 12px; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.35);
+  }
+  .toolbar label{ font-size:14px; opacity:.9; }
+  .toolbar input[type="color"], .toolbar input[type="range"], .toolbar button { cursor:pointer; }
+  .toolbar button{
+    border:0; padding:8px 10px; border-radius:10px; background:#334155; color:var(--text);
+  }
+  .toolbar button:hover{ filter:brightness(1.15); }
+  .size-val{ min-width:2.5ch; display:inline-block; text-align:right; }
+  svg { width:100vw; height:100vh; display:block; background:#0b1020; }
+  /* faint grid */
+  .grid line { stroke:#ffffff20; stroke-width:1; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <label>Color <input id="color" type="color" value="#22c55e"></label>
+  <label>Size <span class="size-val" id="sizeVal">4</span>
+    <input id="size" type="range" min="1" max="24" value="4">
+  </label>
+  <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
+  <button id="clear">Clear</button>
+  <button id="download">Download SVG</button>
+</div>
+
+<svg id="stage" xmlns="http://www.w3.org/2000/svg">
+  <!-- Grid -->
+  <defs>
+    <pattern id="pg" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff12" />
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#pg)"/>
+  <!-- Your masterpieces appear below -->
+  <g id="ink"></g>
+</svg>
+
+<script>
+(() => {
+  const svg = document.getElementById('stage');
+  const ink = document.getElementById('ink');
+  const color = document.getElementById('color');
+  const size = document.getElementById('size');
+  const sizeVal = document.getElementById('sizeVal');
+  const undoBtn = document.getElementById('undo');
+  const clearBtn = document.getElementById('clear');
+  const dlBtn = document.getElementById('download');
+
+  let drawing = false;
+  let pathEl = null;
+  let d = '';
+
+  size.addEventListener('input', () => sizeVal.textContent = size.value);
+  sizeVal.textContent = size.value;
+
+  // Convert pointer to SVG coords
+  function svgPoint(evt){
+    const pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+
+  function startDraw(e){
+    e.preventDefault();
+    const p = svgPoint(e);
+    drawing = true;
+    d = `M ${p.x} ${p.y}`;
+    pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathEl.setAttribute('fill', 'none');
+    pathEl.setAttribute('class', 'drawn');
+    pathEl.setAttribute('stroke-linecap', 'round');
+    pathEl.setAttribute('stroke-linejoin', 'round');
+    pathEl.setAttribute('stroke', color.value);
+    pathEl.setAttribute('stroke-width', size.value);
+    pathEl.setAttribute('d', d);
+    ink.appendChild(pathEl);
+    svg.setPointerCapture(e.pointerId);
+  }
+
+  function moveDraw(e){
+    if(!drawing) return;
+    const p = svgPoint(e);
+    d += ` L ${p.x} ${p.y}`;
+    pathEl.setAttribute('d', d);
+  }
+
+  function endDraw(e){
+    if(!drawing) return;
+    drawing = false;
+    svg.releasePointerCapture(e.pointerId);
+    // Remove tiny taps (optional)
+    const len = pathEl.getTotalLength?.() ?? 2;
+    if (len < 2) pathEl.remove();
+  }
+
+  // Pointer events (works with mouse, touch, stylus)
+  svg.addEventListener('pointerdown', startDraw);
+  svg.addEventListener('pointermove', moveDraw);
+  svg.addEventListener('pointerup', endDraw);
+  svg.addEventListener('pointerleave', endDraw);
+  svg.addEventListener('pointercancel', endDraw);
+
+  // Undo last stroke
+  function undo(){
+    const strokes = ink.querySelectorAll('.drawn');
+    if(strokes.length) strokes[strokes.length - 1].remove();
+  }
+  undoBtn.addEventListener('click', undo);
+  window.addEventListener('keydown', (e)=>{
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') undo();
+  });
+
+  // Clear all
+  clearBtn.addEventListener('click', () => ink.innerHTML = '');
+
+  // Download SVG
+  dlBtn.addEventListener('click', () => {
+    const clone = svg.cloneNode(true);
+    // remove pointer IDs etc.
+    clone.removeAttribute('style');
+    const xml = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([xml], {type: 'image/svg+xml'});
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href:url, download:'drawing.svg' });
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+})();
+</script>
+</body>
+</html>
